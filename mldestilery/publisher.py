@@ -1,6 +1,6 @@
 from typing import Any
 from abc import ABC, abstractmethod
-from mlbarrel.messages import Metric
+from mldestilery.messages import Metric
 from logging import getLogger
 
 logger = getLogger(__name__)

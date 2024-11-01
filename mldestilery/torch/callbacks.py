@@ -1,5 +1,5 @@
 from typing import Any
-from mlbarrel.callbacks import Callback, Metric
+from mldestilery.callbacks import Callback, Metric
 from torch import Tensor
 from torch import argmax
 
