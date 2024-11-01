@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 from typing import Sequence
-from mlbarrel.messages import Metric
-from mlbarrel.publisher import Publisher, Default
-from enum import StrEnum
+from mldestilery.publisher import Publisher, Default
 
 class Callback(ABC):
     def __init__(self):
@@ -26,7 +24,7 @@ class Callback(ABC):
     def reset(self): ...
         
 
-class Grouped(Callback):
+class Group(Callback):
     def __init__(self, callbacks: Sequence[Callback]):
         super().__init__()
         self.callbacks = list[Callback](callbacks)
