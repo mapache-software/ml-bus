@@ -1,7 +1,10 @@
 from typing import Any
-from mldestilery.callbacks import Callback, Metric
+
 from torch import Tensor
 from torch import argmax
+
+from mlbus.callbacks import Callback
+from mlbus.publisher import Metric
 
 def accuracy(predictions: Tensor, target: Tensor) -> float:
     return (predictions == target).float().mean().item()
@@ -19,6 +22,7 @@ class Average:
 
     def reset(self):
         self.value = 0.0
+
 
 class Loss(Callback):
     def __init__(self):

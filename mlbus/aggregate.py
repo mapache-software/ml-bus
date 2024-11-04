@@ -1,18 +1,11 @@
-from typing import Optional
-from typing import Any
 from abc import ABC, abstractmethod
 from collections import deque
-from mlregistry import get_hash
-from messages import Event
-
-def identity(model: Any) -> Optional[str]:
-    try:
-        return get_hash(model)
-    except:
-        return None    
+from mlbus.messages import Event
 
 class Root:
-    def __init__(self):
+    def __init__(self, hash: str):
+        self.id = None
+        self.hash = hash
         self.epochs = 0
         self.events = deque[Event]()
         
@@ -36,3 +29,7 @@ class Aggregate(ABC):
 
     @abstractmethod
     def evaluate(self, *args, **kwargs): ...
+
+class Compiler(ABC):
+
+    def compile(self, *args, **kwargs) -> Aggregate: ...

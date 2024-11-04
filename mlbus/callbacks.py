@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any
 from typing import Sequence
-from mldestilery.publisher import Publisher, Default
+from mlbus.publisher import Publisher
+from mlbus.defaults import Subscriber
 
 class Callback(ABC):
     def __init__(self):
         self.publisher = Publisher()
-        self.publisher.subscribe('result', Default())
+        self.publisher.subscribe('result', Subscriber())
         self.phase = None
         self.epoch = None
         self.batch = None
@@ -24,7 +25,7 @@ class Callback(ABC):
     def reset(self): ...
         
 
-class Group(Callback):
+class Dispatcher(Callback):
     def __init__(self, callbacks: Sequence[Callback]):
         super().__init__()
         self.callbacks = list[Callback](callbacks)
