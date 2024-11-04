@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import deque
-from mlbus.messages import Event
+from mlbus.messagebus import Event
 
 class Root:
     def __init__(self, hash: str):
@@ -11,6 +11,7 @@ class Root:
         
     def publish(self, event: Event):
         self.events.append(event)
+
 
 class Aggregate(ABC):
     root: Root

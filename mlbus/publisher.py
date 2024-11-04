@@ -1,10 +1,10 @@
+from typing import Any
 from abc import ABC, abstractmethod
-from mlbus.messages import Message
 
 class Subscriber(ABC):
 
     @abstractmethod
-    def receive(self, message: Message): ...
+    def receive(self, message: Any): ...
 
     @abstractmethod
     def begin(self): ...
@@ -26,7 +26,7 @@ class Publisher:
     def subscribe(self, topic: str, subscriber: Subscriber):
         self.subscribers.setdefault(topic, []).append(subscriber)
 
-    def publish(self, topic: str, message: Message):
+    def publish(self, topic: str, message: Any):
         for subscriber in self.subscribers.get(topic, []):
             subscriber.receive(message)
 

@@ -1,37 +1,15 @@
-from collections import deque
-from typing import Callable
 from logging import getLogger
-
 from mlbus.aggregate import Event
 from mlbus.aggregate import Aggregate
 from mlbus.publisher import Publisher
-from mlbus.messages import Command
 from mlbus.repository import Repository
+from mlbus.messagebus import Command, Event, Messagebus
 
 logger = getLogger(__name__)
 
-class Bus:
-    def __init__(self):
-        self.handlers = dict[type[Command], Callable[[Command], None]]()
-        self.consumers = dict[type[Event], list[Callable[[Event], None]]]()
-
-    def handle(self, command: Command):
-        handler = self.handlers.get(type(command), None)
-        if not handler:
-            raise ValueError(f"Command not found for message {command}")
-        handler(command)
-
-    def consume(self, event: Event):
-        for consumer in self.consumers.get(type(event), []):
-            try:
-                consumer(event)
-            except:
-                logger.error(f"Error while consuming event {event}")
-
 class Session:
-    def __init__(self, repository: Repository | None = None, bus: Bus = None):
-        self.bus = bus or Bus()
-        self.queue = deque()
+    def __init__(self, repository: Repository | None = None, bus: Messagebus = None):
+        self.bus = bus or Messagebus()
         self.repository = repository
     
     def bind(self, publisher: Publisher):
@@ -41,9 +19,9 @@ class Session:
         self.repository.add(aggregate)
 
     def execute(self, command: Command):
-        self.queue.append(command)
-        while self.queue:
-            message = self.queue.popleft()
+        self.bus.enqueue(command)
+        while self.bus.queue:
+            message = self.bus.dequeue()
             if isinstance(message, Command):
                 self.bus.handle(command)
             elif isinstance(message, Event):
@@ -51,7 +29,7 @@ class Session:
             else:
                 raise TypeError(f"The message {message} wasn't an event nor a command instance")
             for event in self.repository.collect():
-                self.queue.append(event)
+                self.bus.enqueue(event)
             
     def begin(self):
         self.publisher.begin()
@@ -78,4 +56,4 @@ class Session:
             self.rollback()
         else:
             self.commit()
-        self.close()    
+        self.close()

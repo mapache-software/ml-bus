@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Generator
-from mlbus.messages import Event
+from mlbus.messagebus import Event
 from mlbus.aggregate import Aggregate
 
 class Repository:
@@ -9,6 +9,7 @@ class Repository:
 
     def add(self, aggregate: Aggregate):
         self.aggregates[aggregate.root.hash] = aggregate
+        
 
     def collect(self) -> Generator[Event, None, None]:
         for aggregate in self.aggregates.values():

@@ -2,7 +2,7 @@ from typing import Any
 from abc import ABC, abstractmethod
 from logging import getLogger
 from dataclasses import dataclass
-from mlbus.messages import Message
+from mlbus.messagebus import Message
 from mlbus.publisher import Subscriber as Base
 
 logger = getLogger(__name__)

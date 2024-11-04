@@ -1,1 +1,1 @@
-from mlbus.messages import Event
+from mlbus.messagebus import Event
