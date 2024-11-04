@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 from collections import deque
-from mlbus.messagebus import Event
+from pybondi.messagebus import Event
 
 class Root:
     '''
@@ -34,9 +34,23 @@ class Aggregate(ABC):
 
     Attributes:
         root: The root of the aggregate.
-    '''
-    
+    '''    
     root: Root
 
     def __init__(self, root: Root):
         self.root = root
+
+
+class Factory(ABC):
+    '''
+    Factory is an abstract class that defines the interface for creating aggregates.
+    Aggregates should be created through a factory to ensure that they are properly
+    initialized.    
+    '''
+
+    @abstractmethod
+    def create(self, *args, **kwargs) -> Aggregate:
+        '''
+        Creates a new aggregate.
+        '''
+        ...
