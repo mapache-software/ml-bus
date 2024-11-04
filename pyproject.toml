@@ -1,15 +1,13 @@
 [tool.poetry]
-name = "ml-destilery"
+name = "py-bondi"
 version = "0.1.0"
-description = "A library for training machine learning models using domain driven design, event driven architectures and the unit of work pattern."
+description = "A library for creating event driven system using domain driven design."
 authors = ["Eric Cardozo <eric.m.cardozo@mi.unc.edu.ar>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-mlregistry = "^0.2.0"
-
 
 [build-system]
 requires = ["poetry-core"]
