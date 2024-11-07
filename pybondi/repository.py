@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from mlbus.aggregate import Aggregate
+from pybondi.aggregate import Aggregate
 
 class Repository(ABC):
     """

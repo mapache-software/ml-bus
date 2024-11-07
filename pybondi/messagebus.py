@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Callable
 from typing import Any
 from typing import Optional
@@ -11,13 +11,19 @@ class Event(ABC):
     """
     Event is an abstract base class for domain events.
     """
-    ...
+    
 
 class Command(ABC):
     """
     Command is a class representing a request to perform an action.
     """
     ...
+    @abstractmethod
+    def execute(self):
+        """
+        Executes the command.
+        """
+        ...
 
 class Messagebus:
     """
@@ -35,22 +41,34 @@ class Messagebus:
         self.consumers = dict[type[Event], list[Callable[[Event], None]]]()
         self.queue = deque[Command | Event]()
 
+    def register(self, command_type: type[Command], handler: Callable[[Command], None]):
+        """
+        Sets a handler for a given command type. A command type can only have one handler.
+        Parameters:
+            command_type: The type of the command.
+            handler: The handler to be registered.
+        """
+        self.handlers[command_type] = handler
+
+    def subscribe(self, event_type: type[Event], consumer: Callable[[Event], None]):
+        """
+        Adds a consumer for a given event type. An event type can have multiple consumers.
+        Parameters:
+            event_type: The type of the event.
+            consumer: The consumer to be added.
+        """
+        self.consumers.setdefault(event_type, []).append(consumer)
 
     def handle(self, command: Command):
         """
-        Handles a given command by invoking its corresponding handler.
+        Handles a given command by invoking its corresponding handler 
+        or executing it by default.
 
         Parameters:
             command: The command to be handled.
-
-        Raises:
-            ValueError: If no handler is found for the command type.
         """
         handler = self.handlers.get(type(command), None)
-        if not handler:
-            raise ValueError(f"Command not found for message {command}")
-        handler(command)
-
+        command.execute() if not handler else handler(command)
 
     def consume(self, event: Event):
         """
