@@ -18,8 +18,9 @@ class Root:
         self.events = deque[Event]()
 
     def publish(self, event: Event):
+        assert isinstance(event, Event), 'The event must be an instance of Event'
         '''
-        Publishes an event to the aggregate.
+        Publishes a domain event to the aggregate.
         Parameters:
             event: The event to be published.
         '''
@@ -29,14 +30,13 @@ class Root:
 class Aggregate(ABC):
     '''
     Aggregate is an abstract class that represents a collection of domain objects that are
-    treated as a single unit. It is responsible for maintaining the consistency of the
-    domain objects by applying events to them.
+    treated as a single unit. It is responsible for maintaining the consistency of the domain
+    objects by enforcing invariants and ensuring that all changes are made through 
+    well-defined operations.
 
     Attributes:
         root: The root of the aggregate.
-    '''    
-    root: Root
-
+    '''        
     def __init__(self, root: Root):
         self.root = root
 
@@ -49,7 +49,7 @@ class Factory(ABC):
     '''
 
     @abstractmethod
-    def create(self, *args, **kwargs) -> Aggregate:
+    def __call__(self, *args, **kwargs) -> Aggregate:
         '''
         Creates a new aggregate.
         '''
