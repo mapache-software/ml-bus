@@ -1,7 +1,9 @@
 from typing import Any
+from typing import Callable
+from collections import deque
 from abc import ABC, abstractmethod
 
-class Subscriber(ABC):
+class Base(ABC):
     """
     An abstract base class for subscribers to a publisher.
 
@@ -10,7 +12,7 @@ class Subscriber(ABC):
     """
 
     @abstractmethod
-    def receive(self, message: Any) -> None:
+    def handle(self,topic: str, message: Any) -> None:
         """
         Receives a message from the publisher.
 
@@ -42,6 +44,31 @@ class Subscriber(ABC):
         Closes the subscriber and its connection.
         """
 
+class Subscriber(Base):
+    def __init__(self):
+        self.handlers = dict[str, list[Callable]]()
+        self.queue = deque[tuple[str, Any]]()
+
+    def subscribe(self, topic: str, handler: Callable):
+        self.handlers.setdefault(topic, []).append(handler)
+
+    def handle(self, topic: str, message: Any):
+        self.queue.append((topic, message))
+
+    def commit(self):
+        while self.queue:
+            topic, message = self.queue.popleft()
+            [handler(message) for handler in self.handlers.get(topic, [])]
+
+    def rollback(self):
+        self.queue.clear()
+
+    def begin(self):
+        [handler('begin', None) for handler in self.handlers.get('begin', [])]
+
+    def close(self):
+        [handler('begin', None) for handler in self.handlers.get('close', [])]
+
 
 class Publisher:
     """
@@ -61,17 +88,17 @@ class Publisher:
         """
         Initializes the publisher with an empty subscriber dictionary.
         """
-        self.subscribers = dict[str, list[Subscriber]]()
+        self.subscribers = list[Subscriber]()
 
-    def subscribe(self, topic: str, subscriber: Subscriber) -> None:
+    def subscribe(self, subscriber: Subscriber) -> None:
         """
-        Subscribes a subscriber to a specific topic.
+        Subscribes a new subscriber to the publisher.
 
         Parameters:
-            topic: The topic to subscribe to.
-            subscriber: The subscriber to add.
+            subscriber: The subscriber to subscribe.
         """
-        self.subscribers.setdefault(topic, []).append(subscriber)
+        assert isinstance(subscriber, Base), 'Subscriber should inherit from Base'
+        self.subscribers.append(subscriber)
 
     def publish(self, topic: str, message: Any) -> None:
         """
@@ -83,33 +110,30 @@ class Publisher:
             topic: The topic to publish to.
             message: The message to be published.
         """
-        for subscriber in self.subscribers.get(topic, []):
-            subscriber.receive(message)
+        [subscriber.handle(topic, message) for subscriber in self.subscribers]
 
     def commit(self) -> None:
         """
         Commits the current transaction for all subscribers.
         """
-        for list in self.subscribers.values():
-            [subscriber.commit() for subscriber in list]
+        [subscriber.commit() for subscriber in self.subscribers]
+            
 
     def rollback(self) -> None:
         """
         Rolls back the current transaction for all subscribers.
         """
-        for list in self.subscribers.values():
-            [subscriber.rollback() for subscriber in list]
+        [subscriber.rollback() for subscriber in self.subscribers]
+
 
     def begin(self) -> None:
         """
         Starts a new transaction for all subscribers.
         """
-        for list in self.subscribers.values():
-            [subscriber.begin() for subscriber in list]
+        [subscriber.begin() for subscriber in self.subscribers]
 
     def close(self) -> None:
         """
         Closes all subscribers and their connections.
         """
-        for list in self.subscribers.values():
-            [subscriber.close() for subscriber in list]
+        [subscriber.close() for subscriber in self.subscribers]
