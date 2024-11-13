@@ -1,18 +1,44 @@
+from collections import deque
+from typing import Callable
+
 from pybondi.aggregate import Aggregate
-from pybondi.messagebus import Messagebus, Command
+from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
 
 class Session:
+    event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
+    command_handlers = dict[type[Command], Callable[[Command], None]]()
     """
     A session manages a unit of work, cordinates the repository, the message bus and
     the publisher, mantaing the transactional boundaries.
     """
 
-    def __init__(self, repository: Repository, publisher: Publisher, messagebus: Messagebus):
-        self.repository = repository
-        self.messagebus = messagebus
-        self.publisher = publisher
+    def __init__(self, repository: Repository = None, publisher: Publisher = None, messagebus: Messagebus = None):
+        self.publisher = publisher or Publisher()
+        self.repository = repository or Repository()
+        self.queue = deque[Command | Event]()
+
+        if messagebus:
+            self.messagebus = messagebus
+        else:
+            self.messagebus = Messagebus()
+            for event_type, handlers in self.event_handlers.items():
+                [self.messagebus.subscribe(event_type, handler) for handler in handlers]
+            for command_type, handler in self.command_handlers.items():
+                self.messagebus.register(command_type, handler)
+
+    def enqueue(self, message: Command | Event):
+        """
+        Enqueues a message in the session queue.
+        """
+        self.queue.append(message)
+
+    def dequeue(self) -> Command | Event:
+        """
+        Dequeues a message from the session queue.
+        """
+        return self.queue.popleft()
 
     def add(self, aggregate: Aggregate):
         """
@@ -20,29 +46,34 @@ class Session:
         """
         self.repository.add(aggregate)
 
-    def collect_events(self):
+    def dispatch(self, message: Command | Event):
         """
-        Collects events from all aggregates in the repository and enqueues them in the message bus.
+        Dispatches a message to the message bus.
         """
-        for aggregate in self.repository.aggregates.values():
-            while aggregate.root.events:
-                event = aggregate.root.events.popleft()
-                self.messagebus.enqueue(event)
+        if isinstance(message, Command):
+            self.messagebus.handle(message)
+        elif isinstance(message, Event):
+            self.messagebus.consume(message)
 
     def run(self):
         """
         Processes all messages in the queue.
         """
-        while self.messagebus.queue:
-            message = self.messagebus.dequeue()
-            self.messagebus.dispatch(message)
-            self.collect_events()
+        while self.queue:
+            message = self.dequeue()
+            self.dispatch(message)
+            
+            for aggregate in self.repository.aggregates.values():
+                while aggregate.root.events:
+                    event = aggregate.root.events.popleft()
+                    self.enqueue(event)
+
 
     def execute(self, command: Command):
         """
         Executes a command by enqueuing it in the message bus and processing all messages in the queue.
         """
-        self.messagebus.enqueue(command)
+        self.enqueue(command)
         self.run()
 
     def begin(self):
@@ -65,9 +96,11 @@ class Session:
 
     def close(self):
         """
-        Closes the session.
+        Closes the session. If the session queue is not empty, raises an exception.
         """
-        self.publisher.close()
+        self.repository.close(), self.publisher.close()
+        if self.queue:
+            raise Exception("Session queue is not empty")
 
     def __enter__(self):
         self.publisher.begin()

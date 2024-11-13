@@ -11,9 +11,8 @@ class Repository(ABC):
     - Rolling back changes to the previous state.
 
     Concrete subclasses must implement the `store` and `restore` methods to provide
-    specific storage and retrieval mechanisms.
+    specific persistence and retrieval mechanisms for aggregates.
     """
-
     
     def __init__(self):
         self.aggregates = dict[str, Aggregate]()
@@ -47,7 +46,12 @@ class Repository(ABC):
         for aggregate in self.aggregates.values():
             self.restore(aggregate)
 
-    @abstractmethod
+    def close(self):
+        """
+        Closes the repository and releases any resources.
+        """
+        self.aggregates.clear()
+
     def store(self, aggregate: Aggregate):
         """
         Stores the given aggregate to the underlying storage.
@@ -55,9 +59,9 @@ class Repository(ABC):
         Args:
             aggregate: The aggregate to be stored.
         """
-        ...
+        pass
 
-    @abstractmethod
+
     def restore(self, aggregate: Aggregate):
         """
         Restores the given aggregate from the underlying storage.
@@ -65,4 +69,4 @@ class Repository(ABC):
         Args:
             aggregate: The aggregate to be restored.
         """
-        ...
+        pass
