@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 from typing import Any
-from typing import Optional
 from logging import getLogger
 from collections import deque
 
@@ -85,7 +84,7 @@ class Messagebus:
                 logger.debug(exception, exc_info=True)
 
 
-    def dispatch(self, message: Event | Command) -> Optional[Any]:
+    def dispatch(self, message: Any):
         """
         Routes a message to its appropriate handler or consumer.
 
