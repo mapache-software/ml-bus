@@ -5,20 +5,48 @@ from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
+from pybondi.publisher import Base as Subscriber
 
 class Session:
     """
     A session manages a unit of work, cordinates the repository, the message bus and
     the publisher, mantaing the transactional boundaries.
     """
-    
+    subscribers = list[Subscriber]()
     event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
     command_handlers = dict[type[Command], Callable[[Command], None]]()
 
+    @classmethod
+    def add_event_handler(cls, event_type: type[Event], handler: Callable[[Event], None]):
+        """
+        Adds an event handler for a given event type.
+        """
+        cls.event_handlers.setdefault(event_type, []).append(handler)
+
+    @classmethod
+    def add_command_handler(cls, command_type: type[Command], handler: Callable[[Command], None]):
+        """
+        Adds a command handler for a given command type.
+        """
+        cls.command_handlers[command_type] = handler
+
+    @classmethod
+    def subscribe(cls, subscriber: Subscriber):
+        """
+        Subscribes a subscriber to the session.
+        """
+        cls.subscribers.append(subscriber)
+
     def __init__(self, repository: Repository = None, publisher: Publisher = None, messagebus: Messagebus = None):
-        self.publisher = publisher or Publisher()
         self.repository = repository or Repository()
         self.queue = deque[Command | Event]()
+
+        if publisher:
+            self.publisher = publisher
+        else:
+            self.publisher = Publisher()
+            for subscriber in self.subscribers:
+                self.publisher.subscribe(subscriber)
 
         if messagebus:
             self.messagebus = messagebus
