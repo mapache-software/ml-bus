@@ -7,12 +7,13 @@ from pybondi.repository import Repository
 from pybondi.publisher import Publisher
 
 class Session:
-    event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
-    command_handlers = dict[type[Command], Callable[[Command], None]]()
     """
     A session manages a unit of work, cordinates the repository, the message bus and
     the publisher, mantaing the transactional boundaries.
     """
+    
+    event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
+    command_handlers = dict[type[Command], Callable[[Command], None]]()
 
     def __init__(self, repository: Repository = None, publisher: Publisher = None, messagebus: Messagebus = None):
         self.publisher = publisher or Publisher()
