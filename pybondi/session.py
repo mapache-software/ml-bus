@@ -5,21 +5,20 @@ from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
-from pybondi.publisher import Base as Subscriber
 
 class Session:
     """
     A session manages a unit of work, cordinates the repository, the message bus and
     the publisher, mantaing the transactional boundaries.
     """
-    subscribers = list[Subscriber]()
     event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
     command_handlers = dict[type[Command], Callable[[Command], None]]()
+    subscribers = dict[str, list[Callable]]()
 
     @classmethod
     def add_event_handler(cls, event_type: type[Event], handler: Callable[[Event], None]):
         """
-        Adds an event handler for a given event type, when a new session is created
+        Adds an event handler for a given event type when a new session is created
         if no message bus is provided.
         """
         cls.event_handlers.setdefault(event_type, []).append(handler)
@@ -27,18 +26,18 @@ class Session:
     @classmethod
     def add_command_handler(cls, command_type: type[Command], handler: Callable[[Command], None]):
         """
-        Adds a command handler for a given command type, when a new session is created
+        Adds a command handler for a given command type when a new session is created
         if no message bus is provided.
         """
         cls.command_handlers[command_type] = handler
 
     @classmethod
-    def add_subscriber(cls, subscriber: Subscriber):
+    def add_subscriber(cls, topic: str, subscriber: Callable):
         """
-        Add a subscriber to the publisher session, when a new session is created
+        Adds a subscriber for a given topic when a new session is created
         if no publisher is provided.
         """
-        cls.subscribers.append(subscriber)
+        cls.subscribers.setdefault(topic, []).append(subscriber)
 
     def __init__(self, repository: Repository = None, publisher: Publisher = None, messagebus: Messagebus = None):
         self.repository = repository or Repository()
@@ -48,8 +47,8 @@ class Session:
             self.publisher = publisher
         else:
             self.publisher = Publisher()
-            for subscriber in self.subscribers:
-                self.publisher.subscribe(subscriber)
+            for topic, subscriber in self.subscribers.items():
+                self.publisher.subscribe(topic, subscriber)
 
         if messagebus:
             self.messagebus = messagebus
