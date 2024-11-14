@@ -19,21 +19,24 @@ class Session:
     @classmethod
     def add_event_handler(cls, event_type: type[Event], handler: Callable[[Event], None]):
         """
-        Adds an event handler for a given event type.
+        Adds an event handler for a given event type, when a new session is created
+        if no message bus is provided.
         """
         cls.event_handlers.setdefault(event_type, []).append(handler)
 
     @classmethod
     def add_command_handler(cls, command_type: type[Command], handler: Callable[[Command], None]):
         """
-        Adds a command handler for a given command type.
+        Adds a command handler for a given command type, when a new session is created
+        if no message bus is provided.
         """
         cls.command_handlers[command_type] = handler
 
     @classmethod
-    def subscribe(cls, subscriber: Subscriber):
+    def add_subscriber(cls, subscriber: Subscriber):
         """
-        Subscribes a subscriber to the session.
+        Add a subscriber to the publisher session, when a new session is created
+        if no publisher is provided.
         """
         cls.subscribers.append(subscriber)
 
