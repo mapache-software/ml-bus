@@ -5,13 +5,7 @@ from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
-
-@dataclass
-class Added[T: Aggregate](Event):
-    '''
-    The Added event is used to signal that the aggregate has been added to a session.
-    '''
-    aggregate: T
+from pybondi.events import Added
 
 class Session:
     """

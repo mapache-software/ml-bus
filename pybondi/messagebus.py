@@ -2,13 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Callable
 from logging import getLogger
 from collections import deque
+from pybondi.events import Event
 
 logger = getLogger(__name__)
-
-class Event(ABC):
-    """
-    Event is an abstract base class for domain events.
-    """
 
 class Command(ABC):
     """
