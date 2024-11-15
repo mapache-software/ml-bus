@@ -77,6 +77,9 @@ class Session:
         Adds an aggregate to the repository.
         """
         self.repository.add(aggregate)
+        while aggregate.root.events:
+            event = aggregate.root.events.popleft()
+            self.enqueue(event)
         self.enqueue(Added(aggregate))
 
     def dispatch(self, message: Command | Event):

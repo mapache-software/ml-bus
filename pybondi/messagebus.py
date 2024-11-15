@@ -11,12 +11,11 @@ class Command(ABC):
     Command is a class representing a request to perform an action.
     """
     ...
-    @abstractmethod
     def execute(self):
         """
         Executes the command.
         """
-        ...
+        raise NotImplementedError
 
 class Messagebus:
     """
