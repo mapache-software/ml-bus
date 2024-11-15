@@ -7,20 +7,21 @@ logger = getLogger(__name__)
 
 class Event(ABC):
     """
-    Event is an abstract base class for domain events.
+    An abstract base class for domain events. All events should inherit from this class, otherwise
+    they will not be recognized by the message bus.
     """
 
 class Command(ABC):
     """
-    Command is a class representing a request to perform an action.
+    Command is a class representing a request to perform an action. All commands should inherit from this class.
+    Otherwise, they will not be recognized by the message bus.
     """
     ...
-    @abstractmethod
     def execute(self):
         """
         Executes the command.
         """
-        ...
+        raise NotImplementedError
 
 class Messagebus:
     """
