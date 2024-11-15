@@ -1,12 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass
 from pybondi.aggregate import Aggregate
-
-class Event(ABC):
-    """
-    An abstract base class for domain events. All events should inherit from this class, otherwise
-    they will not be recognized by the message bus.
-    """
+from pybondi.messagebus import Event
 
 @dataclass
 class Added[T: Aggregate](Event):
