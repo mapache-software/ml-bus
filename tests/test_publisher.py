@@ -10,7 +10,7 @@ def test_subscribe_and_publish_message(publisher: Publisher):
     subscriber = Mock()
     publisher.subscribe("topic1", subscriber)
     
-    publisher.handle("topic1", "test message")
+    publisher.publish("topic1", "test message")
     publisher.commit()
     subscriber.assert_called_once_with("test message")
 
@@ -19,7 +19,7 @@ def test_multiple_subscribers_on_same_topic(publisher: Publisher):
     subscriber2 = Mock()
     publisher.subscribe("topic1", subscriber1)
     publisher.subscribe("topic1", subscriber2)
-    publisher.handle("topic1", "test message")
+    publisher.publish("topic1", "test message")
     publisher.commit()
     
     subscriber1.assert_called_once_with("test message")
@@ -27,7 +27,7 @@ def test_multiple_subscribers_on_same_topic(publisher: Publisher):
 
 def test_no_subscribers_no_errors(publisher: Publisher):
     # Handle a message with no subscribers
-    publisher.handle("topic1", "test message")
+    publisher.publish("topic1", "test message")
     try:
         publisher.commit()
     except Exception as e:
@@ -37,7 +37,7 @@ def test_rollback_message(publisher: Publisher):
     subscriber = Mock()
     publisher.subscribe("topic1", subscriber)
     
-    publisher.handle("topic1", "test message")
+    publisher.publish("topic1", "test message")
     publisher.rollback()
     
     publisher.commit()

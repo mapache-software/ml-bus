@@ -8,9 +8,9 @@ class Base(ABC):
     An abstract base class for a publisher.
 
     A publisher is responsible for publishing messages to external systems
-    using callables as subscribers. It should implement the methods to
-    mantain transacional consistency and resource management using the
-    begin, commit, rollback and close methods.
+    using callable subscribers. It should implement the methods to mantain 
+    transacional consistency and resource management using the begin, commit,
+    rollback and close methods.
 
     
     The difference between a publisher and a messagebus is that a publisher
@@ -18,17 +18,16 @@ class Base(ABC):
     to outside systems. A message bus is responsible for routing events and
     commands within the bounded context, and handle them inside a transaction.
 
-    Messages passed to the publisher should be serializable objects and 
-    inmutable.
+    Messages passed to the publisher should be serializable objects.
     """
 
     @abstractmethod
-    def handle(self,topic: str, message: Any) -> None:
+    def publish(self, topic: str, message: Any) -> None:
         """
-        Receives a message from the publisher.
+        Publishes a message to a topic.
 
         Args:
-            message: The message to be received.
+            message: The message to be published.
         """
 
     @abstractmethod
@@ -75,7 +74,7 @@ class Publisher(Base):
         '''
         self.subscribers.setdefault(topic, []).append(subscriber)
 
-    def handle(self, topic: str, message: Any):
+    def publish(self, topic: str, message: Any):
         '''
         Receives a message from the publisher. 
         '''
