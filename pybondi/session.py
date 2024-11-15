@@ -1,10 +1,17 @@
 from collections import deque
 from typing import Callable
-
+from dataclasses import dataclass
 from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
+
+@dataclass
+class Added[T: Aggregate](Event):
+    '''
+    The Added event is used to signal that the aggregate has been added to a session.
+    '''
+    aggregate: T
 
 class Session:
     """
@@ -76,6 +83,7 @@ class Session:
         Adds an aggregate to the repository.
         """
         self.repository.add(aggregate)
+        self.enqueue(Added(aggregate))
 
     def dispatch(self, message: Command | Event):
         """
