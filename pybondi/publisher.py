@@ -1,7 +1,23 @@
 from typing import Any
 from typing import Callable
+from datetime import datetime, timezone
 from collections import deque
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
+
+@dataclass
+class Message:
+    '''
+    A message to be published by the publisher.
+
+    Attributes:
+        sender: The identifier of the entitiy that sends the message.
+        payload: The payload of the message.
+    '''
+    sender: str
+    payload: Any
+    timestamp: datetime = datetime.now(timezone.utc)
+
 
 class Base(ABC):
     """
@@ -22,7 +38,7 @@ class Base(ABC):
     """
 
     @abstractmethod
-    def publish(self, topic: str, message: Any) -> None:
+    def publish(self, topic: str, message: Message) -> None:
         """
         Publishes a message to a topic.
 
@@ -74,7 +90,7 @@ class Publisher(Base):
         '''
         self.subscribers.setdefault(topic, []).append(subscriber)
 
-    def publish(self, topic: str, message: Any):
+    def publish(self, topic: str, message: Message):
         '''
         Receives a message from the publisher. 
         '''
