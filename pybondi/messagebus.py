@@ -76,5 +76,5 @@ class Messagebus:
             try:
                 consumer(event)
             except Exception as exception:
-                logger.error(f"Error while consuming event {event}")
+                logger.error(f"Error {exception} while consuming event {event}")
                 logger.debug(exception, exc_info=True)
