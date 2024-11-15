@@ -74,7 +74,9 @@ class Session:
 
     def add(self, aggregate: Aggregate):
         """
-        Adds an aggregate to the repository.
+        Adds an aggregate to the repository. Enqueues an Added event for the aggregate.
+        In case that the aggregate state depends on external resources, the aggregate should
+        bring it's state up to date using a handler for the Added event.
         """
         self.repository.add(aggregate)
         self.enqueue(Added(aggregate))
@@ -117,7 +119,9 @@ class Session:
 
     def commit(self):
         """
-        Commits changes from the transaction.
+        Commits changes from the transaction. Dispatches a Saved event for each aggregate
+        for which changes were committed. In case that the aggregate state depends on external
+        resources, it should be updated using a handler for the Saved event.
         """
         self.run()
         for aggregate in self.repository.aggregates.values():
@@ -126,7 +130,9 @@ class Session:
 
     def rollback(self):
         """
-        Rolls back changes of the transaction.
+        Rolls back changes of the transaction. Dispatches a RolledBack event for each aggregate
+        for which changes were rolled back. In case that the aggregate state depends on external
+        resources, it should be restored to its previous state using a handler for the RolledBack event.
         """
         for aggregate in self.repository.aggregates.values():
             self.dispatch(RolledBack(aggregate))
