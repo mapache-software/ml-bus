@@ -5,7 +5,7 @@ from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
-from pybondi.events import Added
+from pybondi.events import Added, RolledBack, Saved
 
 class Session:
     """
@@ -77,9 +77,6 @@ class Session:
         Adds an aggregate to the repository.
         """
         self.repository.add(aggregate)
-        while aggregate.root.events:
-            event = aggregate.root.events.popleft()
-            self.enqueue(event)
         self.enqueue(Added(aggregate))
 
     def dispatch(self, message: Command | Event):
@@ -122,12 +119,18 @@ class Session:
         """
         Commits changes from the transaction.
         """
+        self.run()
+        for aggregate in self.repository.aggregates.values():
+            self.dispatch(Saved(aggregate))
         self.repository.commit(), self.publisher.commit()
 
     def rollback(self):
         """
         Rolls back changes of the transaction.
         """
+        for aggregate in self.repository.aggregates.values():
+            self.dispatch(RolledBack(aggregate))
+        self.queue.clear()
         self.repository.rollback(), self.publisher.rollback()
 
     def close(self):
