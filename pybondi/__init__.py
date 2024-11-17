@@ -6,5 +6,6 @@ from pybondi.aggregate import Root
 from pybondi.aggregate import Factory
 from pybondi.session import Session
 from pybondi.publisher import Publisher
+from pybondi.publisher import Message
 from pybondi.repository import Repository
 from pybondi.callbacks import Callbacks

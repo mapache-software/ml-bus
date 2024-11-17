@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
 @dataclass
-class Message:
+class Message[T]:
     '''
     A message to be published by the publisher.
 
@@ -15,7 +15,7 @@ class Message:
         payload: The payload of the message.
     '''
     sender: str
-    payload: Any
+    payload: T
     timestamp: datetime = datetime.now(timezone.utc)
 
 
