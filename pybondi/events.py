@@ -1,4 +1,3 @@
-from abc import ABC
 from dataclasses import dataclass
 from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Event
