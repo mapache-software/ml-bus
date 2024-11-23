@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable
+from typing import Optional
 from logging import getLogger
 from collections import deque
 
@@ -33,9 +34,20 @@ class Messagebus:
     """
 
     def __init__(self):
-        self.handlers = dict[type[Command], Callable[[Command], None]]()
-        self.consumers = dict[type[Event], list[Callable[[Event], None]]]()
-        self.queue = deque[Command | Event]()
+        self.command_handlers = dict[type[Command], Callable[[Command], None]]()
+        self.event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
+
+    def on(self, *event_types: type[Event]):
+        """
+        A decorator that registers a consumer for a given event type.
+        Parameters:
+            event_types: The event types to be registered.
+        """
+        def decorator(consumer: Callable[[Event], None]):   
+            for event_type in event_types:
+                self.subscribe(event_type, consumer)
+            return consumer
+        return decorator
 
     def register(self, command_type: type[Command], handler: Callable[[Command], None]):
         """
@@ -44,7 +56,7 @@ class Messagebus:
             command_type: The type of the command.
             handler: The handler to be registered.
         """
-        self.handlers[command_type] = handler
+        self.command_handlers[command_type] = handler
 
     def subscribe(self, event_type: type[Event], consumer: Callable[[Event], None]):
         """
@@ -53,9 +65,21 @@ class Messagebus:
             event_type: The type of the event.
             consumer: The consumer to be added.
         """
-        self.consumers.setdefault(event_type, []).append(consumer)
+        self.event_handlers.setdefault(event_type, []).append(consumer)
 
-    def handle(self, command: Command):
+    def handle(self, message: Event | Command):
+        """
+        Handles a given message by invoking its corresponding handler or executing it by default.
+        Parameters:
+            message: The message to be handled.
+        """
+        
+        if isinstance(message, Command):
+            self.handle_command(message)
+        elif isinstance(message, Event):
+            self.handle_event(message)
+
+    def handle_command(self, command: Command):
         """
         Handles a given command by invoking its corresponding handler 
         or executing it by default.
@@ -63,17 +87,17 @@ class Messagebus:
         Parameters:
             command: The command to be handled.
         """
-        handler = self.handlers.get(type(command), None)
+        handler = self.command_handlers.get(type(command), None)
         command.execute() if not handler else handler(command)
 
-    def consume(self, event: Event):
+    def handle_event(self, event: Event):
         """
-        Consumes a given event by invoking its registered consumers.
+        Handles a given event by invoking its registered consumers.
 
         Parameters:
             event: The event to be consumed.
         """
-        for consumer in self.consumers.get(type(event), []):
+        for consumer in self.event_handlers.get(type(event), []):
             try:
                 consumer(event)
             except Exception as exception:

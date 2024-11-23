@@ -44,21 +44,15 @@ class Session:
         self.repository = repository or Repository()
         self.queue = deque[Command | Event]()
 
-        if publisher:
-            self.publisher = publisher
-        else:
-            self.publisher = Publisher()
-            for topic, subscriber in self.subscribers.items():
-                self.publisher.subscribe(topic, subscriber)
+        self.publisher = publisher or Publisher()
+        for topic, subscriber in self.subscribers.items():
+            self.publisher.subscribe(topic, subscriber)
 
-        if messagebus:
-            self.messagebus = messagebus
-        else:
-            self.messagebus = Messagebus()
-            for event_type, handlers in self.event_handlers.items():
-                [self.messagebus.subscribe(event_type, handler) for handler in handlers]
-            for command_type, handler in self.command_handlers.items():
-                self.messagebus.register(command_type, handler)
+        self.messagebus = messagebus or Messagebus()
+        for event_type, handlers in self.event_handlers.items():
+            [self.messagebus.subscribe(event_type, handler) for handler in handlers]
+        for command_type, handler in self.command_handlers.items():
+            self.messagebus.register(command_type, handler)
 
     def enqueue(self, message: Command | Event):
         """
@@ -85,10 +79,7 @@ class Session:
         """
         Dispatches a message to the message bus.
         """
-        if isinstance(message, Command):
-            self.messagebus.handle(message)
-        elif isinstance(message, Event):
-            self.messagebus.consume(message)
+        self.messagebus.handle(message)
 
     def run(self):
         """
