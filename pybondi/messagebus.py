@@ -37,7 +37,7 @@ class Messagebus:
         self.command_handlers = dict[type[Command], Callable[[Command], None]]()
         self.event_handlers = dict[type[Event], list[Callable[[Event], None]]]()
 
-    def on(self, *event_types: type[Event]):
+    def subscribe(self, *event_types: type[Event]):
         """
         A decorator that registers a consumer for a given event type.
         Parameters:
@@ -45,11 +45,22 @@ class Messagebus:
         """
         def decorator(consumer: Callable[[Event], None]):   
             for event_type in event_types:
-                self.subscribe(event_type, consumer)
+                self.add_event_handler(event_type, consumer)
             return consumer
         return decorator
 
-    def register(self, command_type: type[Command], handler: Callable[[Command], None]):
+    def register(self, command_type: type[Command]):
+        """
+        A decorator that registers a handler for a given command type.
+        Parameters:
+            command_type: The type of the command.
+        """
+        def decorator(handler: Callable[[Command], None]):
+            self.add_command_handler(command_type, handler)
+            return handler
+        return decorator
+
+    def add_command_handler(self, command_type: type[Command], handler: Callable[[Command], None]):
         """
         Sets a handler for a given command type. A command type can only have one handler.
         Parameters:
@@ -58,7 +69,7 @@ class Messagebus:
         """
         self.command_handlers[command_type] = handler
 
-    def subscribe(self, event_type: type[Event], consumer: Callable[[Event], None]):
+    def add_event_handler(self, event_type: type[Event], consumer: Callable[[Event], None]):
         """
         Adds a consumer for a given event type. An event type can have multiple consumers.
         Parameters:

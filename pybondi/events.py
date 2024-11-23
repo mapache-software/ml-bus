@@ -17,7 +17,7 @@ class RolledBack[T: Aggregate](Event):
     aggregate: T
 
 @dataclass
-class Saved[T: Aggregate](Event):
+class Commited[T: Aggregate](Event):
     '''
     The Saved[Aggregate] event is used to signal that the aggregate has been committed in the session.
     '''

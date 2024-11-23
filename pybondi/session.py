@@ -5,7 +5,7 @@ from pybondi.aggregate import Aggregate
 from pybondi.messagebus import Messagebus, Command, Event
 from pybondi.repository import Repository
 from pybondi.publisher import Publisher
-from pybondi.events import Added, RolledBack, Saved
+from pybondi.events import Added, RolledBack, Commited
 
 class Session:
     """
@@ -50,9 +50,9 @@ class Session:
 
         self.messagebus = messagebus or Messagebus()
         for event_type, handlers in self.event_handlers.items():
-            [self.messagebus.subscribe(event_type, handler) for handler in handlers]
+            [self.messagebus.add_event_handler(event_type, handler) for handler in handlers]
         for command_type, handler in self.command_handlers.items():
-            self.messagebus.register(command_type, handler)
+            self.messagebus.add_command_handler(command_type, handler)
 
     def enqueue(self, message: Command | Event):
         """
@@ -116,7 +116,7 @@ class Session:
         """
         self.run()
         for aggregate in self.repository.aggregates.values():
-            self.dispatch(Saved(aggregate))
+            self.dispatch(Commited(aggregate))
         self.repository.commit(), self.publisher.commit()
 
     def rollback(self):

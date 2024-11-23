@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pybondi.aggregate import Aggregate
 
-class Repository(ABC):
+class Repository[T: Aggregate](ABC):
     """
     Repository is an abstract class that defines the interface for storing and restoring aggregates.
 
@@ -17,7 +17,7 @@ class Repository(ABC):
     def __init__(self):
         self.aggregates = dict[str, Aggregate]()
 
-    def add(self, aggregate: Aggregate):
+    def add(self, aggregate: T):
         """
         Adds an aggregate to the internal identity map.
 
@@ -52,7 +52,7 @@ class Repository(ABC):
         """
         self.aggregates.clear()
 
-    def store(self, aggregate: Aggregate):
+    def store(self, aggregate: T):
         """
         Stores the given aggregate to the underlying storage.
 
@@ -62,7 +62,7 @@ class Repository(ABC):
         pass
 
 
-    def restore(self, aggregate: Aggregate):
+    def restore(self, aggregate: T):
         """
         Restores the given aggregate from the underlying storage.
 
