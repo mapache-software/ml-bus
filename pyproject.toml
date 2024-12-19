@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pybondi"
-version = "1.2.0"
+version = "1.2.1"
 description = "A lightweight library for creating event driven systems using domain driven design."
 authors = ["Eric Cardozo <eric.m.cardozo@mi.unc.edu.ar>"]
 license = "MIT"
