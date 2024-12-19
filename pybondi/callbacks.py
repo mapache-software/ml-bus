@@ -5,8 +5,16 @@ from pybondi.publisher import Publisher
 
 class Callback(ABC):
     '''
+    Usually a domain object publish an event and the data from that event is processed
+    and sent to external system using a publisher. But sometimes the data needs to be
+    published just after it is processed. In such cases, the domain object can use a 
+    callback object to process the data and publish it immediately.
+
     Callbacks should be injected into the aggregate's methods to allow it to process
     data and communicate their results to the message publisher.
+
+    When a callback is passed to an aggregate's it shouldn't know that a complex comunication
+    object is being used. It should just call the callback object as if it were a function.
     '''
 
     def __init__(self):

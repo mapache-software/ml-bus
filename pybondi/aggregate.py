@@ -1,56 +1,81 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any
 from collections import deque
 from pybondi.messagebus import Event
+from abc import ABC, abstractmethod
 
-class Root:
-    '''
-    Root is a class that represents the root of an aggregate. It is responsible for
-    mantaning the consistency of the aggregate by storing the events that have occurred
+class Entity(ABC):
+    """
+    Represents a base entity with a unique identifier. Entities are equal if their IDs are equal.
+    ID is a read-only attribute and cannot be modified once set.
 
     Attributes:
-        id: The unique identifier of the aggregate.
-        events: A deque storing the events that have occurred on the aggregate.
-    '''
-
+        id (Any): The unique identifier of the entity.
+    """
     def __init__(self, id: Any):
         self.id = id
-        self.events = deque[Event]()
 
+    def __eq__(self, other: object) -> bool:
+        '''
+        Compares two entities based on their ID.
+        '''
+
+        if not isinstance(other, Entity):
+            return False
+        return self.id == other.id
+    
+    def __hash__(self) -> int:
+        '''
+        Returns the hash of the entity ID.
+        '''
+        return hash(self.id)
+    
+    def __setattr__(self, name, value):
+        '''
+        Prevents modification of the entity ID.
+        '''
+        if name == 'id' and hasattr(self, 'id'):
+            raise AttributeError('Cannot modify the entity ID.')
+        super().__setattr__(name, value)
+
+
+class Root(Entity):
+    """
+    Represents the root entity of an aggregate, responsible for publishing events and
+    maintaining consistency within the aggregate.
+    """
+
+    def __init__(self, id: Any):
+        super().__init__(id)
+        self.events = deque[Event]()
+    
     def publish(self, event: Event):
-        assert isinstance(event, Event), 'The event must be an instance of Event'
-        '''
-        Publishes a domain event to the aggregate.
-        Parameters:
-            event: The event to be published.
-        '''
+        """
+        Adds an event to the root entity's event queue. The
+        event will be collected and processed in a session.
+
+        Args:
+            event (Event): The event to be added to the event queue.
+        """
         self.events.append(event)
 
 
 class Aggregate(ABC):
-    '''
-    Aggregate is an abstract class that represents a collection of domain objects that are
-    treated as a single unit. It is responsible for maintaining the consistency of the domain
-    objects by enforcing invariants and ensuring that all changes are made through 
-    well-defined operations.
+    """
+    Abstract base class for aggregates that contain a root entity.
 
     Attributes:
-        root: The root of the aggregate.
-    '''        
-    def __init__(self, root: Root):
-        self.root = root
+
+        root (Root): The root entity of the aggregate.
+    """
+    root: Root
 
 
-class Factory(ABC):
-    '''
-    Factory is an abstract class that defines the interface for creating aggregates.
-    Aggregates should be created through a factory to ensure that they are properly
-    initialized.    
-    '''
+class Factory[T: Aggregate](ABC):
 
     @abstractmethod
-    def __call__(self, *args, **kwargs) -> Aggregate:
+    def __call__(self, *args, **kwds) -> T:
         '''
-        Creates a new aggregate.
+        Creates a new aggregate instance.
         '''
         ...

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pybondi"
-version = "1.1.0"
+version = "1.2.0"
 description = "A lightweight library for creating event driven systems using domain driven design."
 authors = ["Eric Cardozo <eric.m.cardozo@mi.unc.edu.ar>"]
 license = "MIT"
@@ -8,6 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+fast-depends = "^2.4.12"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.3.3"

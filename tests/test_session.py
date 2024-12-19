@@ -1,58 +1,47 @@
-from typing import Any
-from pytest import fixture
-from pybondi import Event, Command
-from pybondi import Aggregate, Root
-from pybondi import Session
+from pybondi.aggregate import Root
+from pybondi.session import Session
+from pybondi.events import Added, RolledBack, Commited
+from pybondi.messagebus import Messagebus, Depends, Command
 from dataclasses import dataclass
 
-class Entity(Aggregate):
-    def __init__(self):
-        super().__init__(root=Root(id=None))
-        self.mutated = False
-
-    def set_id(self, id):
-        self.root.id = id
-        self.root.publish(IDSetted(entity=self))
+messagebus = Messagebus()
+age = {'1': 18}
 
 @dataclass
-class IDSetted(Event):
-    entity: Entity
+class User:
+    age: int
+    root: Root = Root('1')
 
-    def dump(self) -> dict[str, Any]:
-        return {'id': self.entity.root.id}
+@messagebus.on(Added, RolledBack)
+def bring_user_up_to_date(event: Added[User] | RolledBack[User]):
+    event.aggregate.age = age['1']
+
+@messagebus.on(Commited)
+def save_user(event: Commited[User]):
+    age['1'] = event.aggregate.age
 
 @dataclass
-class CascadeEvent(Event):
-    entity: Entity
+class BumpAge(Command):
+    user: User
 
-@dataclass
-class SetID(Command):
-    entity: Entity
     def execute(self):
-        self.entity.root.id = 1
-        self.entity.root.publish(IDSetted(entity=self.entity))
+        self.user.age += 1 
 
-something = {}
-database = {}
+def test_session():
+    user = User(0)
+    with Session(messagebus) as session:
+        session.add(user)
+        session.execute(BumpAge(user))
 
-def on_id_setted(event: IDSetted):
-    event.entity.mutated = True
-    event.entity.root.publish(CascadeEvent(entity=event.entity))
+    assert age['1'] == 19
+    assert user.age == 19
+    
+    with Session(messagebus) as session:
+        session.add(user)
+        session.execute(BumpAge(user))
+        session.rollback()
 
-def on_cascade_event(event: CascadeEvent):
-    something['event'] = 'cascade'
+    assert age['1'] == 19
+    assert user.age == 19
 
-@fixture
-def session():
-    Session.event_handlers[IDSetted] = [on_id_setted, lambda event: database.update(event.dump())]
-    Session.event_handlers[CascadeEvent] = [on_cascade_event]
-
-def test_session(session):
-    entity = Entity()
-    with Session() as session:
-        session.add(entity)
-        session.execute(SetID(entity=entity))
-
-    print(entity.mutated)
-    assert entity.mutated
-    assert database == {'id': 1}
+    

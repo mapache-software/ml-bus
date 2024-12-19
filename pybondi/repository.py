@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from pybondi.aggregate import Aggregate
 
 class Repository[T: Aggregate](ABC):
@@ -13,7 +13,6 @@ class Repository[T: Aggregate](ABC):
     Concrete subclasses must implement the `store` and `restore` methods to provide
     specific persistence and retrieval mechanisms for aggregates.
     """
-    
     def __init__(self):
         self.aggregates = dict[str, Aggregate]()
 
@@ -46,6 +45,12 @@ class Repository[T: Aggregate](ABC):
         for aggregate in self.aggregates.values():
             self.restore(aggregate)
 
+    def begin(self):
+        """
+        Begins a new transaction for the repository.
+        """
+        pass
+
     def close(self):
         """
         Closes the repository and releases any resources.
@@ -54,7 +59,8 @@ class Repository[T: Aggregate](ABC):
 
     def store(self, aggregate: T):
         """
-        Stores the given aggregate to the underlying storage.
+        Stores the given aggregate to the underlying storage. Override this
+        method with the specific storage mechanism.
 
         Args:
             aggregate: The aggregate to be stored.
@@ -64,7 +70,8 @@ class Repository[T: Aggregate](ABC):
 
     def restore(self, aggregate: T):
         """
-        Restores the given aggregate from the underlying storage.
+        Restores the given aggregate from the underlying storage . Override this
+        method with the specific storage mechanism.
 
         Args:
             aggregate: The aggregate to be restored.
