@@ -1,6 +1,16 @@
 name: CI
-on: [push, pull_request]
-
+on:
+  push:
+    paths:
+      - '**/*.py'  
+      - 'pybondi/**' 
+      - 'tests/**' 
+      
+  pull_request:
+    paths:
+      - '**/*.py' 
+      - 'pybondi/**'   
+      - 'tests/**'   
 jobs:
   tests:
     strategy:
