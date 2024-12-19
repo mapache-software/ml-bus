@@ -1,7 +1,7 @@
-from pybondi.aggregate import Root
-from pybondi.session import Session
+from pybondi import Root
+from pybondi import Session
 from pybondi.events import Added, RolledBack, Commited
-from pybondi.messagebus import Messagebus, Depends, Command
+from pybondi import Messagebus, Depends, Command
 from dataclasses import dataclass
 
 messagebus = Messagebus()

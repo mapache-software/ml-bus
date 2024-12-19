@@ -1,7 +1,7 @@
 from logging import getLogger
-from fast_depends import Depends
-from pybondi.messagebus import Event, Command
-from pybondi.messagebus import Messagebus
+from pybondi import Depends
+from pybondi import Event, Command
+from pybondi import Messagebus
 
 logger = getLogger(__name__)
 

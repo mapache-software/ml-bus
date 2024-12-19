@@ -1,5 +1,5 @@
 from pytest import fixture, fail
-from pybondi.publisher import Message, Publisher, Depends
+from pybondi import Message, Publisher, Depends
 
 class DAO:
     def __init__(self):
