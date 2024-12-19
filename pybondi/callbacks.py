@@ -78,11 +78,14 @@ class Callbacks:
     def __init__(self, callbacks: Sequence[Callback]):
         self.publisher = Publisher()
         self.list = list[Callback](callbacks)
+        for callback in self.list:
+            callback.bind(self.publisher) 
     
     def bind(self, publisher: Publisher):
         '''
         Bind a publisher to all the callback objects.
         '''
+        self.publisher = publisher
         [callback.bind(publisher) for callback in self.list]
 
     def set(self, name: str, value: Any) -> None:
