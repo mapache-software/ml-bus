@@ -18,9 +18,6 @@ This library provides a framework for modeling complex domains using an event dr
 - A session class for managing transactions and unit of work. 
 - Default events for handling aggregate's state when it is added to a session, saved, or rolled back.
 
-
-### Example
-
 ## Write domain logic using commands and events
 
 You can define commands and events as classes that inherit from the Command and Event classes. A command is a request to do something, and an event is a notification that something has happened. 
@@ -31,8 +28,6 @@ You can handle commands and events by defining "handlers" that are functions tha
 
 from pybondi.messagebus import Event, Command
 from pybondi.messagebus import Messagebus, Depends
-
-logger = getLogger(__name__)
 
 class MakeSomethingHappen(Command):
     def __init__(self, message: str):
