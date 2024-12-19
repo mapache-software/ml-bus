@@ -64,7 +64,6 @@ class Callback(ABC):
         '''
         ...
 
-
 class Callbacks:
     '''
     Callbacks is a class that manages a group of callback objects. It is responsible for
@@ -102,18 +101,21 @@ class Callbacks:
         Call the callbacks. Data from the aggregate's methods should be passed
         to the callback objects through this method, and processed accordingly.   
         '''
-        [callback(*args, **kwargs) for callback in self.list]
+        for callback in self.list:
+            callback(*args, **kwargs)
 
     def flush(self):
         '''
         Flush the callbacks. If the callback objects have a buffer, the buffer should
         be flushed and the data should be sent to the message publisher.    
         '''
-        [callback.flush() for callback in self.list]
+        for callback in self.list:
+            callback.flush()
         
     def reset(self):
         '''
         Reset the callbacks. The callback objects should reset any internal state
         that they maintain, if any.
         '''
-        [callback.reset() for callback in self.list]
+        for callback in self.list:
+            callback.reset()

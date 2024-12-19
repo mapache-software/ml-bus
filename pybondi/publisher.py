@@ -5,8 +5,6 @@ from typing import Callable
 from datetime import datetime, timezone
 from collections import deque
 from dataclasses import dataclass, field
-
-from fast_depends import Depends as Depends
 from fast_depends import inject as _inject
 from fast_depends import Provider as _Provider
 

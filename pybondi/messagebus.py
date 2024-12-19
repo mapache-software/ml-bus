@@ -3,8 +3,6 @@ from typing import Callable
 from typing import Optional
 from typing import Any
 from logging import getLogger
-
-from fast_depends import Depends as Depends
 from fast_depends import inject as _inject
 from fast_depends import Provider as _Provider
 
@@ -36,7 +34,7 @@ class Command(ABC):
         Raises:
             NotImplementedError: If the method is not overridden by the subclass.
         """
-        raise NotImplementedError("Subclasses must implement the execute method.")
+        raise NotImplementedError("Subclasses should implement the execute method.")
 
 
 class Messagebus:
@@ -115,7 +113,7 @@ class Messagebus:
                 logger.error(f"Error {exception} while consuming event {event}")
                 logger.debug(exception, exc_info=True)
                 if self.raise_on_event_error:
-                    raise exception
+                    raise
                
 
     def add_command_handler(self, command_type: type[Command], handler: Callable[[Command], None]):
