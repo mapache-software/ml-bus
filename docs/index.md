@@ -1,4 +1,6 @@
-# PyBondi
+# Welcome to the PyBondi library
+
+This is the documentation for **PyBondi**. You will find all the information you need to get started, including guides, reference material, and examples.
 
 ## Table of Contents
 

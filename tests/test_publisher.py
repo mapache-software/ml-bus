@@ -1,31 +1,23 @@
-from pytest import fixture, fail
-from pybondi import Message, Publisher, Depends
-
-class DAO:
-    def __init__(self):
-        self.data = []
-
-def abc_dependency() -> DAO: ...
+from pybondi.publisher import Publisher, Depends
 
 publisher = Publisher()
+nfs = []
+db = []
 
-@publisher.subscribe("topic-1")
-def subscriber1(message: Message, dao: DAO = Depends(abc_dependency)):
-    dao.data.append(message.payload)
+def get_db():
+    return db
 
-@publisher.subscribe("topic-1", "topic-2")
-def subscriber2(message: Message, dao: DAO = Depends(abc_dependency)):
-    dao.data.append(message.payload)
+@publisher.subscriber('topic-1', 'topic-2')
+def callback(message):
+    nfs.append(message)
 
-dao = DAO()
-publisher.dependency_overrides[abc_dependency] = lambda: dao
-
+@publisher.subscriber('topic-2')
+def second_callback(message, db = Depends(get_db)):
+    print(message)
+    db.append(message)
+    
 def test_publisher():
-    publisher.publish("topic-1", Message("Hi"))
-    publisher.rollback()
-    publisher.publish("topic-2", Message("Hello"))
-    publisher.publish("topic-2", Message("World"))
-    publisher.publish("topic-1", Message("!"))
-    publisher.commit()
-
-    assert dao.data == ["Hello", "World", "!", "!"]
+    publisher.publish('topic-1', 'Hello')
+    publisher.publish('topic-2', 'World')
+    assert db == ['World']
+    assert nfs == ['Hello', 'World']

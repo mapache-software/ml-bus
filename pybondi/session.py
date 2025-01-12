@@ -1,113 +1,170 @@
-from collections import deque
-from pybondi.aggregate import Aggregate
-from pybondi.messagebus import Messagebus, Command, Event
-from pybondi.repository import Repository
-from pybondi.publisher import Publisher
-from pybondi.events import Added, RolledBack, Commited
+from typing import Protocol
+from typing import Callable
+from typing import Optional
+from logging import getLogger
+from inspect import signature
 
-class Session:
+logger = getLogger(__name__)
+
+class Resource(Protocol):
     """
-    A session manages a unit of work, cordinates the repository, the message bus and
-    the publisher, mantaing the transactional boundaries.
+    Represents an interface (Protocol) for resources. Resources are objects that can handle
+    transactions and provide access to data or services.
     """
-    def __init__(self, messagebus: Messagebus = None,  publisher: Publisher = None, repository: Repository = None):
-        self.repository = repository or Repository()
-        self.messagebus = messagebus or Messagebus()
-        self.publisher = publisher or Publisher()
-        self.queue = deque()
-
-    def enqueue(self, message: Command | Event):
-        """
-        Enqueues a message in the session queue.
-        """
-        self.queue.append(message)
-
-    def dequeue(self) -> Command | Event:
-        """
-        Dequeues a message from the session queue.
-        """
-        return self.queue.popleft()
-
-    def add(self, aggregate: Aggregate):
-        """
-        Adds an aggregate to the repository. Enqueues an Added event for the aggregate.
-        In case that the aggregate state depends on external resources, the aggregate should
-        bring it's state up to date using a handler for the Added event.
-        """
-        self.repository.add(aggregate)
-        self.enqueue(Added(aggregate))
-
-    def dispatch(self, message: Command | Event):
-        """
-        Dispatches a message to the message bus.
-        """
-        self.messagebus.handle(message)
-
-    def run(self):
-        """
-        Processes all messages in the queue.
-        """
-        while self.queue:
-            message = self.dequeue()
-            self.messagebus.handle(message)
-            
-            for aggregate in self.repository.aggregates.values():
-                while aggregate.root.events:
-                    event = aggregate.root.events.popleft()
-                    self.enqueue(event)
-
-
-    def execute(self, command: Command):
-        """
-        Executes a command by enqueuing it in the message bus and processing all messages in the queue.
-        """
-        self.enqueue(command)
-        self.run()
-
+    ...
     def begin(self):
         """
-        Begins a new transaction.
+        Begins a transaction. This method should be called before any other
+        transactional methods are invoked.
         """
-        self.publisher.begin()
+        ...
 
     def commit(self):
         """
-        Commits changes from the transaction. Dispatches a Saved event for each aggregate
-        for which changes were committed. In case that the aggregate state depends on external
-        resources, it should be updated using a handler for the Saved event.
+        Commits the current transaction. This method should be called after all
+        transactional methods have been invoked successfully.
         """
-        self.run()
-        for aggregate in self.repository.aggregates.values():
-            self.messagebus.handle(Commited(aggregate))
-        self.repository.commit(), self.publisher.commit()
+        ...
 
     def rollback(self):
         """
-        Rolls back changes of the transaction. Dispatches a RolledBack event for each aggregate
-        for which changes were rolled back. In case that the aggregate state depends on external
-        resources, it should be restored to its previous state using a handler for the RolledBack event.
+        Rolls back the current transaction. This method should be called if an
+        error occurs during the transaction.
         """
-        for aggregate in self.repository.aggregates.values():
-            self.messagebus.handle(RolledBack(aggregate))
-        self.queue.clear()
-        self.repository.rollback(), self.publisher.rollback()
+        ...
 
     def close(self):
         """
-        Closes the session. If the session queue is not empty, raises an exception.
+        Closes the resource. This method should be called after all transactions
+        have been completed.
         """
-        self.repository.close(), self.publisher.close()
-        if self.queue:
-            raise Exception("Session queue is not empty")
+        ...
+
+class Session:
+    """
+    Represents a session for managing transactions with a resource. Sessions are used
+    to group multiple operations into a single transaction that can be committed or
+    rolled back as a unit.
+
+    Custom exception handlers can be registered to handle specific exceptions that
+    occur during the session to avoid rolling back the transaction. This is useful
+    for example for early stopping in loops.
+
+    Attributes:
+        *args: Variable length argument list with resource instances. 
+
+    Methods:
+        begin(self) -> None:
+            Begins a transaction with the resource.
+
+        commit(self) -> None:
+            Commits the current transaction with the resource.
+
+        rollback(self) -> None:
+            Rolls back the current transaction with the resource.
+
+        close(self) -> None:
+            Closes the session and releases the resource.
+
+    Example:
+
+        .. code-block:: python
+
+        from pybondi import Session
+        
+        with Session(repository, publisher, logger) as session:
+            repository.add(model)
+            publisher.publish(event)
+            session.commit() # Session will commit all resources
+
+            repository.add(another_model)
+            raise Exception("Something went wrong") # Session will rollback all resources
+                                                    # to the state where it was committed
+    """
+    def __init__(self, *args: Resource):
+        """
+        Initializes a new session with the given resources.
+
+        Args:
+            *args: Variable length argument list with resource instances.
+        """
+        self.resources = args
+        self.handler: dict[type[BaseException], Callable[[Optional[BaseException]], bool]] = {}
+
+    def on(self, exception: type[BaseException]):
+        """
+        Registers an exception handler for the given exception type.
+
+        Args:
+            exception: The type of exception to handle.
+
+        Returns:
+            A decorator that registers the exception handler.
+        """
+        def decorator(handler: Callable[[Optional[BaseException]], bool]):
+            self.handler[exception] = handler
+        return decorator
 
     def __enter__(self):
-        self.publisher.begin()
+        """
+        Begins a transaction with the resource. This method should be called
+        """
+        for resource in self.resources:
+            resource.begin()
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
-        self.run()
+        """
+        Handles the session's lifecycle, including invoking exception handlers if an exception occurs.
+        if a handler exists for the exception type, non exception will be raised else the exception will be raised.
+        if the exception handler returns True, the transaction will be committed, otherwise it will be rolled back.
+
+        Args:
+            exc_type: The type of the exception raised.
+            exc_value: The exception instance raised.
+            traceback: The traceback object.
+
+        """
         if exc_type:
-            self.rollback()
+            result = False
+            commit = False
+            if exc_type in self.handler:
+                result = True
+                try:
+                    handler_signature = signature(self.handler[exc_type])
+                    if len(handler_signature.parameters) == 0:
+                        commit = self.handler[exc_type]()
+                    else:
+                        commit = self.handler[exc_type](exc_value)
+                except Exception as error:
+                    logger.error(f"Error while handling exception: {error}")
+                    commit = False
+                    result = False
         else:
-            self.commit()
-        self.close()
+            result = True
+            commit = True
+
+        if commit is True:
+            for resource in self.resources:
+                resource.commit()
+        else:
+            for resource in self.resources:
+                resource.rollback()
+
+        for resource in self.resources:
+            resource.close()
+        return result
+    
+    def commit(self):
+        """
+        Commits the current transaction with the resource.
+        """
+        for resource in self.resources:
+            resource.commit()
+
+    def rollback(self):
+        """
+        Rolls back the current transaction with the resource.
+        """
+        for resource in self.resources:
+            resource.rollback()

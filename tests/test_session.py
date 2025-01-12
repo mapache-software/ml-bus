@@ -1,47 +1,74 @@
-from pybondi import Root
-from pybondi import Session
-from pybondi.events import Added, RolledBack, Commited
-from pybondi import Messagebus, Depends, Command
-from dataclasses import dataclass
+from pytest import raises
+from pybondi.session import Session
 
-messagebus = Messagebus()
-age = {'1': 18}
+db = []
 
-@dataclass
-class User:
-    age: int
-    root: Root = Root('1')
+def update_db(e):
+    db.append('update')
+    return True
 
-@messagebus.on(Added, RolledBack)
-def bring_user_up_to_date(event: Added[User] | RolledBack[User]):
-    event.aggregate.age = age['1']
+def rollback_db(e):
+    return False
 
-@messagebus.on(Commited)
-def save_user(event: Commited[User]):
-    age['1'] = event.aggregate.age
+class UOW:
+    def __init__(self):
+        self.commited = False
+        self.rolledback = False
+        self.closed = False
+        self.started = False
+        self.count = 0
 
-@dataclass
-class BumpAge(Command):
-    user: User
+    def commit(self):
+        self.commited = True
 
-    def execute(self):
-        self.user.age += 1 
+    def rollback(self):
+        self.rolledback = True
 
-def test_session():
-    user = User(0)
-    with Session(messagebus) as session:
-        session.add(user)
-        session.execute(BumpAge(user))
+    def close(self):
+        self.closed = True
 
-    assert age['1'] == 19
-    assert user.age == 19
+    def begin(self):
+        self.started = True
+
+
+def test_sessions():
+    resource = UOW()
+
+    with Session(resource) as session:
+        assert resource.started == True
+        session.on(KeyError)(lambda e: update_db(e))
+        raise KeyError('test')
     
-    with Session(messagebus) as session:
-        session.add(user)
-        session.execute(BumpAge(user))
-        session.rollback()
+    assert db[0] == 'update'
+    assert resource.commited == True # Since the exception was handled with positive result
+    assert resource.closed == True
 
-    assert age['1'] == 19
-    assert user.age == 19
 
+    resource = UOW()
+    with Session(resource) as session:
+        assert resource.started == True
+        session.on(KeyError)(lambda e: rollback_db(e))
+        raise KeyError('test')
+    assert resource.commited == False # Since the exception was handled with negative result
+    assert resource.closed == True
     
+    with raises(KeyError):
+        resource = UOW()
+        with Session() as session:
+            raise KeyError('test')
+        assert resource.closed == True
+    
+
+    resource = UOW()
+    with Session(resource) as session:
+        session.on(KeyError)(lambda: True) # This will not raise any exception and will be commited
+        for count in range(10):
+            resource.count = count
+            if count == 2:
+                raise KeyError('test')
+            
+    assert count == 2
+    assert resource.commited == True
+    assert resource.closed == True
+    assert resource.count == 2
+    assert resource.rolledback == False
